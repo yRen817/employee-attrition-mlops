@@ -1,0 +1,49 @@
+project:
+  name: employee-attrition-mlops
+  random_state: 42
+
+data:
+  input_path: data/raw/WA_Fn-UseC_-HR-Employee-Attrition.csv
+  processed_path: data/processed/attrition_processed.csv
+  target_column: Attrition
+  test_size: 0.20
+  validation_size: 0.20
+  missing_rate: 0.05
+
+features:
+  drop_columns:
+    - EmployeeNumber
+    - EmployeeCount
+    - Over18
+    - StandardHours
+
+preprocessing:
+  numeric_strategy: median
+  categorical_strategy: most_frequent
+  scaling: standard
+
+model:
+  type: logistic_regression
+  params:
+    C: 1.0
+    max_iter: 1000
+    class_weight: balanced
+
+evaluation:
+  primary_metric: f1
+  minimum_f1: 0.50
+  threshold: 0.50
+
+mlflow:
+  experiment_name: employee-attrition-experiments
+  tracking_uri: ./mlruns
+
+dvc:
+  data_version_label: employee-attrition-v1
+
+monitoring:
+  reference_path: data/processed/reference.csv
+  production_path: data/processed/production_simulated.csv
+  report_path: reports/drift_report.html
+  drift_share_threshold: 0.30
+  random_state: 42

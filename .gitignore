@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Test and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ML artifacts
+models/
+mlruns/
+mlartifacts/
+
+# Generated datasets
+data/processed/
+reports/*.html
+reports/*.json
+
+# OS / editor
+.DS_Store
+.vscode/
