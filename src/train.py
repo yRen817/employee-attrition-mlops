@@ -340,6 +340,7 @@ def run_training(config_path, model_type=None, c=None,
             skops_trusted_types=[
                 "numpy.dtype",
                 "sklearn.tree._tree.Tree",
+                "sklearn.compose._column_transformer._RemainderColsList",
             ],
         )
 
