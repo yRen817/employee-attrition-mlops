@@ -351,10 +351,7 @@ def run_training(config_path, model_type=None, c=None,
             artifact_path="model",
             signature=signature,
             input_example=input_example,
-            skops_trusted_types=[
-                "numpy.dtype",
-                "sklearn.tree._tree.Tree",
-],
+            
         )
 
         print(f"\nMLflow run ID: {run.info.run_id}")
