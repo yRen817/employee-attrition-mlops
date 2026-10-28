@@ -276,16 +276,57 @@ def run_training(config_path, model_type=None, c=None,
         mlflow.log_param("data.features_before_encoding", X_train.shape[1])
         mlflow.log_param("preprocessing.missing_rate", missing_rate)
 
+
         pipeline.fit(X_train, y_train)
 
         # Validation data determines whether the model is accepted.
         val_metrics = calculate_metrics(pipeline, X_val, y_val)
+
         mlflow.log_metrics({
             f"validation_{key}": value
             for key, value in val_metrics.items()
         })
-         # Log the complete fitted preprocessing + model pipeline.
+
+        print(f"\nMLflow run ID: {run.info.run_id}")
+        print(f"Data version: {data_version}")
+
+        print("\nValidation metrics:")
+        for metric, value in val_metrics.items():
+            print(f"  {metric}: {value:.4f}")
+
+        primary_metric = evaluation_cfg["primary_metric"]
+        minimum_score = float(evaluation_cfg["minimum_f1"])
+        achieved_score = val_metrics[primary_metric]
+
+        print(
+            f"\nAcceptance check: {primary_metric} = "
+            f"{achieved_score:.4f}; minimum = {minimum_score:.4f}"
+        )
+
+        if achieved_score < minimum_score:
+            raise RuntimeError(
+                f"Model failed acceptance: {primary_metric} "
+                f"{achieved_score:.4f} < {minimum_score:.4f}"
+            )
+
+        print("Model passed the validation acceptance check.")
+
+        # Evaluate the test data for final reporting.
+        # Do not use test metrics for model selection.
+        test_metrics = calculate_metrics(pipeline, X_test, y_test)
+
+        mlflow.log_metrics({
+            f"test_{key}": value
+            for key, value in test_metrics.items()
+        })
+
+        print("\nTest metrics:")
+        for metric, value in test_metrics.items():
+            print(f"  {metric}: {value:.4f}")
+
+        # Log the complete fitted preprocessing + model pipeline.
         input_example = X_train.head(5)
+
         signature = infer_signature(
             input_example,
             pipeline.predict(input_example),
@@ -302,91 +343,11 @@ def run_training(config_path, model_type=None, c=None,
             ],
         )
 
-        print(f"\nMLflow run ID: {run.info.run_id}")
-        print(f"Data version: {data_version}")
-
-        print("\nValidation metrics:")
-        for metric, value in val_metrics.items():
-            print(f"  {metric}: {value:.4f}")
-
-        primary_metric = evaluation_cfg["primary_metric"]
-        minimum_score = float(evaluation_cfg["minimum_f1"])
-        achieved_score = val_metrics[primary_metric]
-
-        print(
-            f"\nAcceptance check: {primary_metric} = "
-            f"{achieved_score:.4f}; minimum = {minimum_score:.4f}"
-        )
-
-        if achieved_score < minimum_score:
-            raise RuntimeError(
-                f"Model failed acceptance: {primary_metric} "
-                f"{achieved_score:.4f} < {minimum_score:.4f}"
-            )
-
-        print("Model passed the validation acceptance check.")
-        return {
-            "run_id": run.info.run_id,
-            "validation_metrics": val_metrics,
-        }
-
-
-        # Evaluate test data for reporting; do not use it to tune
-        # or select a model.
-        test_metrics = calculate_metrics(pipeline, X_test, y_test)
-        mlflow.log_metrics({
-            f"test_{key}": value
-            for key, value in test_metrics.items()
-        })
-
-        # Log the complete fitted preprocessing + model pipeline.
-        input_example = X_train.head(5)
-        signature = infer_signature(
-            input_example,
-            pipeline.predict(input_example),
-        )
-
-        mlflow.sklearn.log_model(
-            sk_model=pipeline,
-            artifact_path="model",
-            signature=signature,
-            input_example=input_example,
-            
-        )
-
-        print(f"\nMLflow run ID: {run.info.run_id}")
-        print(f"Data version: {data_version}")
-
-        print("\nValidation metrics:")
-        for metric, value in val_metrics.items():
-            print(f"  {metric}: {value:.4f}")
-
-        print("\nTest metrics:")
-        for metric, value in test_metrics.items():
-            print(f"  {metric}: {value:.4f}")
-
-        primary_metric = evaluation_cfg["primary_metric"]
-        minimum_score = float(evaluation_cfg["minimum_f1"])
-        achieved_score = val_metrics[primary_metric]
-
-        print(
-            f"\nAcceptance check: {primary_metric} = "
-            f"{achieved_score:.4f}; minimum = {minimum_score:.4f}"
-        )
-
-        if achieved_score < minimum_score:
-            raise RuntimeError(
-                f"Model failed acceptance: {primary_metric} "
-                f"{achieved_score:.4f} < {minimum_score:.4f}"
-            )
-
-        print("Model passed the validation acceptance check.")
         return {
             "run_id": run.info.run_id,
             "validation_metrics": val_metrics,
             "test_metrics": test_metrics,
         }
-
 
 def main():
     parser = argparse.ArgumentParser()
