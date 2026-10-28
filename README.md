@@ -119,3 +119,15 @@ See `MONITORING.md` for the monitoring methodology, thresholds, results, and int
 The project uses a YAML configuration, DVC data versioning, automated tests, MLflow tracking, and GitHub Actions to support reproducibility.
 
 Results may vary with dependency versions, dataset versions, and configuration changes. This is an educational project; its predictions should not be used to make employment decisions or evaluate individual employees. The model may reflect biases in historical data and has not been validated for real-world employment use.
+
+## Data Drift Monitoring
+
+This project uses Evidently to monitor changes in employee attrition model input features. Simulated production data is used to test drift detection, with a configurable threshold that triggers a warning when the drift share exceeds 30%.
+
+The monitoring script generates an HTML report and identifies features that may have shifted.
+
+**Documentation:** [Data Drift Monitoring Details](docs/data-drift-monitoring.md)
+
+**Report:** [View the HTML Drift Report](reports/drift_report.html)
+
+Run the monitor using `python -m src.monitor_drift`.
