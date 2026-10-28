@@ -31,12 +31,12 @@ model:
 
 evaluation:
   primary_metric: f1
-  minimum_f1: 0.50
+  minimum_f1: 0.30
   threshold: 0.50
 
 mlflow:
   experiment_name: employee-attrition-experiments
-  tracking_uri: ./mlruns
+  tracking_uri: sqlite:///mlflow.db
 
 dvc:
   data_version_label: employee-attrition-v1

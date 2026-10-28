@@ -3,64 +3,119 @@
 
 ## Project Overview
 
-This project builds an end-to-end MLOps pipeline to predict employee attrition using machine learning.
+This project demonstrates an end-to-end machine learning operations (MLOps) pipeline for predicting employee attrition using the IBM HR Analytics Employee Attrition & Performance dataset.
 
-The goal is to demonstrate reproducible data processing, experiment tracking, automated testing, CI/CD, and data drift monitoring.
+The goal is to demonstrate reproducible data preprocessing, model training and evaluation, experiment tracking, automated testing, continuous integration, data versioning, and data drift monitoring.
 
-## Dataset
+This is an educational portfolio project, not a validated employee-retention decision system.
 
-The project uses the IBM HR Analytics Employee Attrition & Performance dataset.
+## Problem and Dataset
 
-Source: https://www.kaggle.com/datasets/pavansubhasht/ibm-hr-analytics-attrition-dataset
+The project treats employee attrition prediction as a binary classification task. The target column is `Attrition`.
 
-Prediction target: `Attrition`
+Dataset source: [IBM HR Analytics Employee Attrition & Performance — Kaggle](https://www.kaggle.com/datasets/pavansubhasht/ibm-hr-analytics-attrition-dataset)
 
-Task: Binary classification to predict whether an employee leaves the company.
-
-Missing values will be simulated in selected input features to demonstrate preprocessing and data quality practices.
+The preprocessing pipeline simulates missing values in selected features to demonstrate data-quality handling. The monitoring workflow also creates simulated production data to demonstrate how changes in feature distributions can be detected.
 
 ## Technology Stack
 
-- Python
-- pandas
+- Python and pandas
 - scikit-learn
-- Git and GitHub
-- DVC
-- MLflow
-- pytest
-- GitHub Actions
-- Evidently
+- DVC for dataset versioning
+- MLflow for experiment tracking
+- pytest for automated testing
+- GitHub Actions for continuous integration
+- Evidently for data drift monitoring
+- YAML configuration for training settings
 
-## Project Setup
+## Repository Structure
 
-1. Clone the repository.
-2. Create and activate a Python virtual environment.
+```text
+.
+├── .github/workflows/       # GitHub Actions pipeline
+├── configs/train.yaml       # Training configuration
+├── data/raw/                # DVC-tracked dataset pointer
+├── src/
+│   ├── data_preprocessing.py
+│   ├── train.py
+│   ├── evaluate.py
+│   └── monitor_drift.py
+├── tests/                   # Automated tests
+├── reports/
+│   └── drift_report.html    # Generated drift report
+├── compare_experiments.py   # Experiment comparison
+├── MONITORING.md            # Monitoring approach and results
+├── requirements.txt
+└── README.md
+```
+
+## Setup
+
+Use Python 3.12 for the intended project environment.
+
+1. Clone the repository and enter its directory.
+2. Create and activate a virtual environment.
 3. Install dependencies:
 
-   `pip install -r requirements.txt`
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   python -m pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
 
-4. Retrieve the dataset:
+4. Retrieve the dataset using DVC:
 
-   `dvc pull`
+   ```bash
+   dvc pull
+   ```
 
-## Training
+   The configured DVC remote must be accessible to your account. If access is not configured, `dvc pull` will fail until valid remote access is established.
 
-Training instructions will be documented after the training pipeline is implemented.
+## Run the Pipeline
 
-## Testing
+Run the tests:
 
-Run:
+```bash
+pytest tests/ -v
+```
 
-`pytest tests/ -v`
+Run training:
 
-## Monitoring
+```bash
+python -m src.train
+```
 
-The project will compare reference data against simulated production data using Evidently and generate a drift report.
+Run evaluation:
 
-## Reproducibility
+```bash
+python -m src.evaluate
+```
 
-The project will use configuration files, versioned data, recorded model parameters, and automated tests.
+Training and evaluation require the project's dataset and dependencies to be available. See `configs/train.yaml` for configurable training settings.
 
-## Limitations
+## Experiment Tracking
 
-This is an educational project. Predictions are not intended for employment decisions or evaluating individual employees.
+The project integrates MLflow to record model-training experiments and evaluation information. Experiment records can be used to compare configurations and review model results.
+
+Run `compare_experiments.py` to compare experiments when the required MLflow runs are available.
+
+## Continuous Integration
+
+The GitHub Actions workflow at `.github/workflows/mlops-pipeline.yml` is configured to run on pushes and pull requests targeting `main`. It installs dependencies, retrieves DVC data, runs automated tests, and executes model training and evaluation.
+
+The workflow requires the DVC remote and any necessary credentials to be configured correctly in the GitHub repository settings.
+
+## Data Drift Monitoring
+
+The monitoring workflow compares reference data with simulated production data using Evidently and produces an HTML report at `reports/drift_report.html`.
+
+The simulation deliberately changes selected feature distributions to demonstrate drift detection. The resulting drift report is therefore a demonstration of the monitoring process, not evidence of drift in a real production environment.
+
+See `MONITORING.md` for the monitoring methodology, thresholds, results, and interpretation.
+
+## Reproducibility and Limitations
+
+The project uses a YAML configuration, DVC data versioning, automated tests, MLflow tracking, and GitHub Actions to support reproducibility.
+
+Results may vary with dependency versions, dataset versions, and configuration changes. This is an educational project; its predictions should not be used to make employment decisions or evaluate individual employees. The model may reflect biases in historical data and has not been validated for real-world employment use.

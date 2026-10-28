@@ -33,4 +33,22 @@ reports/*.json
 
 # OS / editor
 .DS_Store
-.vscode/
+.vscode/mlflow.db
+mlflow.db-shm
+mlflow.db-wal
+
+
+# Python virtual environments
+.venv/
+.venv312/
+venv/
+
+# Local MLflow tracking database and artifacts
+mlflow.db
+mlruns/
+mlartifacts/
+
+# Generated drift monitoring data
+data/processed/
+reports/*
+!reports/drift_report.html
