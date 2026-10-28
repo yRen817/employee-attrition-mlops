@@ -1,7 +1,7 @@
 """Monitor feature drift between reference and simulated production data."""
 
 from pathlib import Path
-
+import mlflow
 import pandas as pd
 import yaml
 from evidently import Report
@@ -13,8 +13,22 @@ CONFIG_PATH = ROOT / "configs" / "train.yaml"
 
 
 def load_config():
-    with CONFIG_PATH.open("r", encoding="utf-8") as file:
+     with CONFIG_PATH.open("r", encoding="utf-8") as file:
         return yaml.safe_load(file)
+
+def configure_tracking_uri(uri):
+    """Resolve the MLflow tracking URI consistently with training."""
+    if "://" in uri:
+        return uri
+
+    path = Path(uri)
+    if not path.is_absolute():
+        path = ROOT / path
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path.resolve().as_uri()
+
+
 
 
 def prepare_datasets(config):
@@ -117,14 +131,14 @@ def find_drifted_columns(result):
     walk(result)
     return sorted(drifted)
 
-
 def main():
+    """Monitor feature drift and log results to MLflow."""
     config = load_config()
     monitoring = config["monitoring"]
+    mlflow_config = config["mlflow"]
 
     reference, production = prepare_datasets(config)
 
-    # Generate Evidently's data drift report.
     report = Report(metrics=[DataDriftPreset()])
     snapshot = report.run(
         reference_data=reference,
@@ -139,12 +153,14 @@ def main():
     drifted_columns = find_drifted_columns(result)
 
     total_features = len(reference.columns)
-    drift_share = len(drifted_columns) / total_features
+    drifted_count = len(drifted_columns)
+    drift_share = drifted_count / total_features
     threshold = float(monitoring["drift_share_threshold"])
+    threshold_exceeded = drift_share > threshold
 
-    print("\n--- Drift Monitoring Summary ---")
+    print("\\n--- Drift Monitoring Summary ---")
     print(f"Total input features: {total_features}")
-    print(f"Drifted features: {len(drifted_columns)}")
+    print(f"Drifted features: {drifted_count}")
     print(f"Drift share: {drift_share:.1%}")
     print(f"Configured threshold: {threshold:.1%}")
     print(
@@ -153,7 +169,31 @@ def main():
     )
     print(f"HTML report: {report_path}")
 
-    if drift_share > threshold:
+    tracking_uri = configure_tracking_uri(mlflow_config["tracking_uri"])
+    mlflow.set_tracking_uri(tracking_uri)
+    mlflow.set_experiment(mlflow_config["experiment_name"])
+
+    with mlflow.start_run(run_name="data-drift-monitoring"):
+        mlflow.log_params({
+            "monitoring.drift_threshold": threshold,
+            "monitoring.reference_rows": len(reference),
+            "monitoring.production_rows": len(production),
+            "monitoring.total_features": total_features,
+        })
+        mlflow.log_metrics({
+            "drift_share": drift_share,
+            "drifted_features_count": drifted_count,
+            "total_features": total_features,
+            "drift_threshold": threshold,
+            "drift_threshold_exceeded": float(threshold_exceeded),
+        })
+        mlflow.log_dict(
+            {"drifted_features": drifted_columns},
+            "drifted_features.json",
+        )
+        mlflow.log_artifact(str(report_path), artifact_path="drift_reports")
+
+    if threshold_exceeded:
         print("WARNING: Feature drift exceeds the configured threshold.")
         raise SystemExit(1)
 
